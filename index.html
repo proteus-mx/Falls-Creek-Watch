@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ski Falls Webcams</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      margin: 0; 
+      padding: 20px; 
+      background: var(--bg-color); 
+      color: var(--text-color);
+      transition: background 0.3s, color 0.3s;
+    }
+    :root {
+      --bg-color: #f4f4f4;
+      --text-color: #000;
+    }
+    body.dark-mode {
+      --bg-color: #222;
+      --text-color: #fff;
+    }
+    .gallery { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+      gap: 20px; 
+    }
+    .image-container { 
+      text-align: center; 
+      position: relative; 
+
+    }
+    img { 
+      max-width: 100%; 
+      height: auto; 
+      border-radius: 2px; 
+      cursor: pointer; 
+      clip-path: inset(0 0 11% 0); /* top right bottom left */
+    }
+    .image-name { 
+      margin: 10px 0; 
+      font-weight: bold; 
+    }
+    button { 
+      margin: 10px; 
+      padding: 8px 16px; 
+      cursor: pointer; 
+      background: var(--button-bg); 
+      color: var(--button-text); 
+      border: none; 
+      border-radius: 4px; 
+    }
+    body.dark-mode button {
+      --button-bg: #444;
+      --button-text: #fff;
+    }
+    .fullscreen { 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      background: rgba(0, 0, 0, 0.9); 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      z-index: 1000; 
+    }
+    .fullscreen img { 
+      max-width: 90%; 
+      max-height: 90%; 
+      object-fit: contain; 
+    }
+    .fullscreen .image-name { 
+      color: white; 
+      position: absolute; 
+      top: 20px; 
+    }
+    .map-container { 
+      position: relative; 
+      display: inline-block; 
+      max-width: 90%; 
+      max-height: 90%; 
+      overflow: hidden; 
+    }
+    .camera-marker { 
+      position: absolute; 
+      width: 20px; 
+      height: 20px; 
+      background: red; 
+      border-radius: 50%; 
+      cursor: pointer; 
+    }
+    .camera-marker:hover::after { 
+      content: attr(data-name); 
+      color: white; 
+      background: rgba(0, 0, 0, 0.7); 
+      padding: 5px; 
+      border-radius: 3px; 
+      position: absolute; 
+      top: -25px; 
+      left: 50%; 
+      transform: translateX(-50%); 
+      white-space: nowrap; 
+    }
+    .cursor-position { 
+      color: white; 
+      position: absolute; 
+      top: 50px; 
+      left: 20px; 
+    }
+    .map-container img { 
+      transition: transform 0.3s ease; 
+    }
+    .archive-gallery { 
+      display: flex; 
+      flex-wrap: wrap; 
+      gap: 10px; 
+      justify-content: center; 
+    }
+  </style>
+</head>
+<body>
+  <h1>Ski Falls Webcams</h1>
+  <button onclick="showMap()">View Trail Map</button>
+  <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
+  <div class="gallery" id="gallery"></div>
+
+  <script>
+    const items = [
+      { url: 'https://www.skifalls.com.au/Portals/0/WebCams/Live/ScottsUnload.jpg?a', name: 'Scotts Unload', mapX: '30%', mapY: '20%', type: 'image' },
+      { url: 'https://www.skifalls.com.au/Portals/0/WebCams/Live/Scotts.jpg?a', name: 'Scotts', mapX: '32%', mapY: '22%', type: 'image' },
+      { url: 'https://www.skifalls.com.au/Portals/0/WebCams/Live/Village.jpg?a', name: 'Village', mapX: '40%', mapY: '30%', type: 'image' },
+      { url: 'https://www.skifalls.com.au/Portals/0/WebCams/Live/FALLStowers.jpg?a', name: 'Falls Towers', mapX: '35%', mapY: '25%', type: 'image' },
+      { url: 'https://www.skifalls.com.au/Portals/0/WebCams/Live/Ruined.jpg?a', name: 'Ruined', mapX: '38%', mapY: '28%', type: 'image' },
+      { url: 'https://www.skifalls.com.au/Portals/0/WebCams/Live/Cloud9.jpg?a', name: 'Cloud 9', mapX: '36%', mapY: '26%', type: 'image' },
+      { url: 'https://www.skifalls.com.au/Portals/0/WebCams/Live/Mainstreet.jpg?a', name: 'Main Street', mapX: '39%', mapY: '29%', type: 'image' },
+      { url: 'https://www.skifalls.com.au/Portals/0/WebCams/Live/Drovers.jpg?a', name: 'Drovers', mapX: '20%', mapY: '20%', type: 'image' }
+    ];
+
+    const mapUrl = 'TrailMaps_Jun24-1.jpg';
+    const gallery = document.getElementById('gallery');
+
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark-mode');
+    }
+
+    function createFullscreen(item, isMap = false, isArchive = false) {
+      const fullscreenDiv = document.createElement('div');
+      fullscreenDiv.className = 'fullscreen';
+      const container = document.createElement('div');
+      container.className = isMap ? 'map-container' : isArchive ? 'archive-gallery' : '';
+
+
+
+      if (isArchive) {
+        const date = '2025-06-05'; // You can dynamically update this later
+        const folder = `images/${date}`;
+        const baseName = item.name.replace(/\s+/g, '');
+         
+        const archiveImages = Array.from({ length: 5 }, (_, i) => {
+          const timestamp = `T10-${20 + i * 5}-00-060Z`; // Simulated times
+          return `webcam-capture/webcam-capture/${folder}/${baseName}_${date}${timestamp}.jpg`;
+        });
+
+        archiveImages.forEach(src => {
+          const img = document.createElement('img');
+          img.src = src;
+          img.alt = `${item.name} archive`;
+          container.appendChild(img);
+        });
+      }
+      else {
+        const element = document.createElement('img');
+        element.src = item ? item.url : mapUrl;
+        element.alt = item ? item.name : 'Trail Map';
+        element.onerror = () => {
+          console.error('Failed to load image:', element.src);
+          element.src = 'https://via.placeholder.com/800x600?text=Image+Not+Found';
+        };
+        container.appendChild(element);
+
+        if (isMap) {
+          let zoomLevel = 1;
+          container.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            zoomLevel = e.deltaY < 0 ? Math.min(zoomLevel + 0.5, 5) : Math.max(zoomLevel - 0.5, 1);
+            element.style.transform = `scale(${zoomLevel})`;
+            updateMarkers();
+          });
+
+          const markers = items.map(img => {
+            const marker = document.createElement('div');
+            marker.className = 'camera-marker';
+            marker.style.left = img.mapX;
+            marker.style.top = img.mapY;
+            marker.setAttribute('data-name', img.name);
+            marker.onclick = () => {
+              element.style.transform = `scale(4)`;
+              element.style.transformOrigin = `${img.mapX} ${img.mapY}`;
+              setTimeout(() => {
+                document.body.removeChild(fullscreenDiv);
+                createFullscreen(img);
+              }, 2000);
+            };
+            container.appendChild(marker);
+            return marker;
+          });
+
+          const cursorPos = document.createElement('div');
+          cursorPos.className = 'cursor-position';
+          cursorPos.textContent = 'X: 0%, Y: 0%';
+          fullscreenDiv.appendChild(cursorPos);
+
+          const updateMarkers = () => {
+            const rect = element.getBoundingClientRect();
+            markers.forEach((marker, index) => {
+              const xPercent = parseFloat(items[index].mapX);
+              const yPercent = parseFloat(items[index].mapY);
+              marker.style.left = `${xPercent}%`;
+              marker.style.top = `${yPercent}%`;
+              marker.style.transform = `scale(${1 / zoomLevel})`;
+            });
+          };
+
+          container.addEventListener('mousemove', (e) => {
+            const rect = element.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width * 100).toFixed(2);
+            const y = ((e.clientY - rect.top) / rect.height * 100).toFixed(2);
+            cursorPos.textContent = `X: ${x}%, Y: ${y}%`;
+          });
+
+          window.addEventListener('resize', updateMarkers);
+          element.onload = updateMarkers;
+
+          fullscreenDiv.addEventListener('click', (e) => {
+            if (e.target === fullscreenDiv) {
+              window.removeEventListener('resize', updateMarkers);
+              document.body.removeChild(fullscreenDiv);
+            }
+          });
+        }
+      }
+
+      if (item) {
+        const name = document.createElement('div');
+        name.className = 'image-name';
+        name.textContent = isArchive ? `${item.name} Archive` : item.name;
+        fullscreenDiv.appendChild(name);
+      }
+
+      fullscreenDiv.appendChild(container);
+
+      fullscreenDiv.onclick = (e) => {
+        if (e.target === fullscreenDiv) {
+          document.body.removeChild(fullscreenDiv);
+        }
+      };
+
+      document.body.appendChild(fullscreenDiv);
+    }
+
+    function showMap() {
+      createFullscreen(null, true);
+    }
+
+    items.forEach(item => {
+      const container = document.createElement('div');
+      container.className = 'image-container';
+
+      const element = document.createElement('img');
+      element.src = item.url;
+      element.alt = item.name;
+      element.onerror = () => {
+        console.error('Failed to load image:', item.url);
+        element.src = 'https://via.placeholder.com/300?text=Image+Not+Found';
+      };
+      element.onclick = () => createFullscreen(item);
+
+      const name = document.createElement('div');
+      name.className = 'image-name';
+      name.textContent = item.name;
+
+      const archiveButton = document.createElement('button');
+      archiveButton.textContent = 'View Archive';
+      archiveButton.onclick = () => {
+        window.location.href = "http://127.0.0.1:5500/Falls%20Creek%20Watch/webcam-capture/view.html?camera="+item.name.replace(/\s+/g, '');
+      }
+      //archiveButton.onclick = () => createFullscreen(item, false, true);
+      //http://127.0.0.1:5500/Falls%20Creek%20Watch/webcam-capture/view.html?camera=Village 
+      container.appendChild(element);
+      container.appendChild(name);
+      container.appendChild(archiveButton);
+      gallery.appendChild(container);
+    });
+  </script>
+</body>
+</html>
