@@ -89,13 +89,24 @@ struct ContentView: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            if let localURL = Bundle.main.url(forResource: "index", withExtension: "html") {
-                WebView(
+            //if let localURL = Bundle.main.url(forResource: "index", withExtension: "html") {
+                /*WebView(
                     url: localURL,
                     isLoading: $isLoading,
                     webViewRef: $webViewRef
+                )*/
+                
+                
+                WebView(
+                    url: URL(string: "https://proteus-mx.github.io/Falls-Creek-Watch/index.html")!,
+                    isLoading: $isLoading,
+                    webViewRef: $webViewRef
                 )
-            }
+                
+                
+                
+                
+            //}
 
             VStack {
                 HStack(spacing: 10) {
